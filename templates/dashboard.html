@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="ro">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>USV Events Dashboard</title>
+
+    <!-- Bootstrap -->
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+
+    <!-- FullCalendar -->
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/6.1.8/index.global.min.css"
+          rel="stylesheet">
+
+    <style>
+
+        body{
+            margin:0;
+            background:#edf2f7;
+            font-family:'Segoe UI',sans-serif;
+        }
+
+        /* SIDEBAR */
+
+        .sidebar{
+            width:260px;
+            height:100vh;
+            position:fixed;
+            left:0;
+            top:0;
+            background:#0d1b2a;
+            color:white;
+            padding:30px 20px;
+            overflow-y:auto;
+        }
+
+        .sidebar h2{
+            font-weight:bold;
+            margin-bottom:40px;
+        }
+
+        .sidebar a{
+            display:block;
+            color:white;
+            text-decoration:none;
+            padding:14px;
+            border-radius:12px;
+            margin-bottom:10px;
+            transition:0.3s;
+        }
+
+        .sidebar a:hover{
+            background:#1b263b;
+        }
+
+        /* CONTENT */
+
+        .content{
+            margin-left:280px;
+            padding:30px;
+        }
+
+        /* TOPBAR */
+
+        .topbar{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            margin-bottom:30px;
+        }
+
+        .welcome{
+            font-size:30px;
+            font-weight:700;
+            color:#0d1b2a;
+        }
+
+        .initials{
+            width:55px;
+            height:55px;
+            border-radius:50%;
+            background:#0077b6;
+            color:white;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            font-size:18px;
+            font-weight:bold;
+        }
+
+        /* FILTER BOX */
+
+        .filter-box{
+            background:white;
+            padding:25px;
+            border-radius:20px;
+            margin-bottom:30px;
+            box-shadow:0 4px 20px rgba(0,0,0,0.05);
+        }
+
+        /* EVENT CARD */
+
+        .event-card{
+            background:white;
+            padding:25px;
+            border-radius:20px;
+            margin-bottom:25px;
+            box-shadow:0 4px 20px rgba(0,0,0,0.05);
+            transition:0.3s;
+        }
+
+        .event-card:hover{
+            transform:translateY(-5px);
+        }
+
+        .event-title{
+            font-size:24px;
+            font-weight:bold;
+            color:#0d1b2a;
+        }
+
+        .event-badge{
+            background:#0077b6;
+            color:white;
+            border-radius:10px;
+            padding:6px 12px;
+            font-size:12px;
+        }
+
+        .recommendation-box{
+            background:#dff6ff;
+            border-left:5px solid #0077b6;
+            padding:15px;
+            border-radius:12px;
+            margin-bottom:25px;
+        }
+
+        #calendar{
+            display:none;
+            background:white;
+            padding:20px;
+            border-radius:20px;
+            box-shadow:0 4px 20px rgba(0,0,0,0.05);
+        }
+
+        textarea{
+            resize:none;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<!-- SIDEBAR -->
+
+<div class="sidebar">
+
+    <h2>USV EVENTS</h2>
+
+    <a href="#" onclick="showList()">📋 Evenimente</a>
+
+    <a href="#" onclick="showCalendar()">📅 Calendar</a>
+
+    <a href="#" onclick="loadRecommendations()">⭐ Recomandări</a>
+
+    <a href="/logout">🚪 Logout</a>
+
+</div>
+
+<!-- CONTENT -->
+
+<div class="content">
+
+    <!-- TOPBAR -->
+
+    <div class="topbar">
+
+        <div class="welcome">
+            Bine ai venit 👋
+        </div>
+
+        <div class="initials">
+            {{ initials }}
+        </div>
+
+    </div>
+
+    <!-- RECOMMENDATIONS -->
+
+    <div id="recommendationsContainer"></div>
+
+    <!-- FILTERS -->
+
+    <div class="filter-box">
+
+        <div class="row g-3">
+
+            <!-- FACULTATE -->
+
+            <div class="col-md-3">
+
+                <select id="filterFaculty"
+                        class="form-select">
+
+                    <option value="">Facultate</option>
+
+                    <option>
+                        Facultatea de Inginerie Electrică și Știința Calculatoarelor
+                    </option>
+
+                    <option>
+                        Facultatea de Inginerie Mecanică, Autovehicule și Robotică
+                    </option>
+
+                    <option>
+                        Facultatea de Educație Fizică și Sport
+                    </option>
+
+                    <option>
+                        Facultatea de Inginerie Alimentară
+                    </option>
+
+                    <option>
+                        Facultatea de Istorie, Geografie și Științe Sociale
+                    </option>
+
+                    <option>
+                        Facultatea de Litere și Științe ale Comunicării
+                    </option>
+
+                    <option>
+                        Facultatea de Silvicultură
+                    </option>
+
+                    <option>
+                        Facultatea de Economie, Administrație și Afaceri
+                    </option>
+
+                    <option>
+                        Facultatea de Psihologie și Științe ale Educației
+                    </option>
+
+                    <option>
+                        Facultatea de Drept și Științe Administrative
+                    </option>
+
+                    <option>
+                        Facultatea de Medicină și Științe Biologice
+                    </option>
+
+                </select>
+
+            </div>
+
+            <!-- DATE -->
+
+            <div class="col-md-2">
+
+                <input type="date"
+                       id="filterDate"
+                       class="form-control">
+
+            </div>
+
+            <!-- CATEGORY -->
+
+            <div class="col-md-2">
+
+                <select id="filterCategory"
+                        class="form-select">
+
+                    <option value="">Categorie</option>
+
+                    <option>academic</option>
+
+                    <option>sport</option>
+
+                    <option>carieră</option>
+
+                    <option>voluntariat</option>
+
+                </select>
+
+            </div>
+
+            <!-- LOCATION -->
+
+            <div class="col-md-2">
+
+                <input type="text"
+                       id="filterLocation"
+                       class="form-control"
+                       placeholder="Locație">
+
+            </div>
+
+            <!-- MODE -->
+
+            <div class="col-md-3">
+
+                <select id="filterMode"
+                        class="form-select">
+
+                    <option value="">Modalitate</option>
+
+                    <option>online</option>
+
+                    <option>fizic</option>
+
+                    <option>hibrid</option>
+
+                </select>
+
+            </div>
+
+            <!-- ORGANIZER -->
+
+            <div class="col-md-3">
+
+                <input type="text"
+                       id="filterOrganizer"
+                       class="form-control"
+                       placeholder="Organizator">
+
+            </div>
+
+            <!-- QR -->
+
+            <div class="col-md-2">
+
+                <select id="filterQR"
+                        class="form-select">
+
+                    <option value="">
+                        Are cod QR?
+                    </option>
+
+                    <option value="1">Da</option>
+
+                    <option value="0">Nu</option>
+
+                </select>
+
+            </div>
+
+            <!-- REGISTRATION -->
+
+            <div class="col-md-3">
+
+                <select id="filterRegistration"
+                        class="form-select">
+
+                    <option value="">
+                        Necesită înscriere?
+                    </option>
+
+                    <option value="1">Da</option>
+
+                    <option value="0">Nu</option>
+
+                </select>
+
+            </div>
+
+            <!-- SORT -->
+
+            <div class="col-md-2">
+
+                <select id="sortBy"
+                        class="form-select">
+
+                    <option value="date_asc">
+                        Dată crescător
+                    </option>
+
+                    <option value="date_desc">
+                        Dată descrescător
+                    </option>
+
+                </select>
+
+            </div>
+
+            <!-- LOGIC -->
+
+            <div class="col-md-2">
+
+                <select id="logicOperator"
+                        class="form-select">
+
+                    <option value="AND">AND</option>
+
+                    <option value="OR">OR</option>
+
+                </select>
+
+            </div>
+
+            <!-- BUTTONS -->
+
+            <div class="col-md-2">
+
+                <button onclick="loadEvents()"
+                        class="btn btn-primary w-100">
+
+                    Aplică
+
+                </button>
+
+            </div>
+
+            <div class="col-md-2">
+
+                <button onclick="resetFilters()"
+                        class="btn btn-outline-secondary w-100">
+
+                    Reset
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- EVENTS -->
+
+    <div id="eventsContainer"></div>
+
+    <!-- CALENDAR -->
+
+    <div id="calendar"></div>
+
+</div>
+
+<!-- FULLCALENDAR -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/6.1.8/index.global.min.js"></script>
+
+<script>
+
+let calendar;
+
+// ================= LOAD EVENTS =================
+
+async function loadEvents(){
+
+    const faculty =
+        document.getElementById("filterFaculty").value;
+
+    const date =
+        document.getElementById("filterDate").value;
+
+    const category =
+        document.getElementById("filterCategory").value;
+
+    const location =
+        document.getElementById("filterLocation").value;
+
+    const mode =
+        document.getElementById("filterMode").value;
+
+    const organizer =
+        document.getElementById("filterOrganizer").value;
+
+    const qr =
+        document.getElementById("filterQR").value;
+
+    const registration =
+        document.getElementById("filterRegistration").value;
+
+    const sort =
+        document.getElementById("sortBy").value;
+
+    const logic =
+        document.getElementById("logicOperator").value;
+
+    let url = `/api/events?sort=${sort}&logic=${logic}&`;
+
+    if(faculty)
+        url += `faculty=${encodeURIComponent(faculty)}&`;
+
+    if(date)
+        url += `date=${encodeURIComponent(date)}&`;
+
+    if(category)
+        url += `category=${encodeURIComponent(category)}&`;
+
+    if(location)
+        url += `location=${encodeURIComponent(location)}&`;
+
+    if(mode)
+        url += `mode=${encodeURIComponent(mode)}&`;
+
+    if(organizer)
+        url += `organizer=${encodeURIComponent(organizer)}&`;
+
+    if(qr)
+        url += `has_qr=${qr}&`;
+
+    if(registration)
+        url += `requires_registration=${registration}&`;
+
+    const res = await fetch(url);
+
+    const events = await res.json();
+
+    const container =
+        document.getElementById("eventsContainer");
+
+    container.innerHTML = "";
+
+    events.forEach(ev => {
+
+        const googleCalendarLink =
+
+        `https://calendar.google.com/calendar/render?action=TEMPLATE
+        &text=${encodeURIComponent(ev.title)}
+        &details=${encodeURIComponent(ev.description)}
+        &location=${encodeURIComponent(ev.location)}`;
+
+        container.innerHTML += `
+
+        <div class="event-card">
+
+            <div class="d-flex
+                        justify-content-between
+                        align-items-center">
+
+                <div class="event-title">
+
+                    ${ev.is_registered
+                        ? "⭐ " + ev.title
+                        : ev.title}
+
+                </div>
+
+                <div class="event-badge">
+                    ${ev.category || "event"}
+                </div>
+
+            </div>
+
+            <hr>
+
+            <p>${ev.description || ""}</p>
+
+            <p>
+                <b>📅 Data:</b>
+                ${ev.start_datetime}
+            </p>
+
+            <p>
+                <b>📍 Locație:</b>
+                ${ev.location || "-"}
+            </p>
+
+            <p>
+                <b>🏫 Facultate:</b>
+                ${ev.faculty || "-"}
+            </p>
+
+            <p>
+                <b>👨‍🏫 Organizator:</b>
+                ${ev.organizer || "-"}
+            </p>
+
+            <p>
+                <b>💻 Modalitate:</b>
+                ${ev.mode || "-"}
+            </p>
+
+            <p>
+                <b>🔗 Link înscriere:</b>
+
+                <a href="${ev.registration_link}"
+                   target="_blank">
+
+                   Deschide
+
+                </a>
+            </p>
+
+            <p>
+
+                <b>QR:</b>
+
+                ${ev.has_qr
+                    ? "✔️ Disponibil"
+                    : "❌ Nu"}
+
+            </p>
+
+            <div class="mt-4">
+
+                ${
+
+                    ev.is_registered
+
+                    ?
+
+                    `
+
+                    <button class="btn btn-danger"
+                            onclick="unregisterEvent(${ev.id})">
+
+                        Anulează înscrierea
+
+                    </button>
+
+                    `
+
+                    :
+
+                    `
+
+                    <button class="btn btn-primary"
+                            onclick="registerEvent(${ev.id})">
+
+                        Înscrie-te
+
+                    </button>
+
+                    `
+
+                }
+
+                <a href="/api/events/${ev.id}/ics"
+                   class="btn btn-outline-dark">
+
+                    Export .ics
+
+                </a>
+
+                <a href="${googleCalendarLink}"
+                   target="_blank"
+                   class="btn btn-success">
+
+                    Google Calendar
+
+                </a>
+
+            </div>
+
+            <!-- FEEDBACK -->
+
+            <div class="mt-4">
+
+                <textarea
+                    id="feedback-${ev.id}"
+                    class="form-control"
+                    placeholder="Feedback..."></textarea>
+
+                <select
+                    id="rating-${ev.id}"
+                    class="form-select mt-2">
+
+                    <option value="5">5 ⭐</option>
+                    <option value="4">4 ⭐</option>
+                    <option value="3">3 ⭐</option>
+                    <option value="2">2 ⭐</option>
+                    <option value="1">1 ⭐</option>
+
+                </select>
+
+                <button
+                    class="btn btn-success mt-2"
+                    onclick="sendFeedback(${ev.id})">
+
+                    Trimite feedback
+
+                </button>
+
+            </div>
+
+        </div>
+
+        `;
+
+        // ================= CALENDAR =================
+
+        if(calendar){
+
+            calendar.addEvent({
+
+                id:ev.id,
+
+                title: ev.is_registered
+                    ? "⭐ " + ev.title
+                    : ev.title,
+
+                start:ev.start_datetime.replace(" ","T"),
+
+                extendedProps:{
+
+                    registered:ev.is_registered
+
+                }
+
+            });
+        }
+    });
+}
+
+// ================= REGISTER =================
+
+async function registerEvent(eventId){
+
+    const res = await fetch(
+        `/api/events/${eventId}/register`,
+        {
+            method:"POST"
+        }
+    );
+
+    const data = await res.json();
+
+    if(data.ticket){
+
+        alert(
+            "Înscriere realizată! Bilet generat."
+        );
+
+        window.open("/" + data.ticket);
+
+    }else{
+
+        alert(data.message || data.error);
+
+    }
+}
+
+// ================= UNREGISTER =================
+
+async function unregisterEvent(eventId){
+
+    const res = await fetch(
+        `/api/events/${eventId}/unregister`,
+        {
+            method:"POST"
+        }
+    );
+
+    const data = await res.json();
+
+    alert(data.message || data.error);
+}
+
+// ================= FEEDBACK =================
+
+async function sendFeedback(eventId){
+
+    const rating =
+        document.getElementById(`rating-${eventId}`).value;
+
+    const comment =
+        document.getElementById(`feedback-${eventId}`).value;
+
+    const res = await fetch(
+
+        `/api/events/${eventId}/feedback`,
+
+        {
+            method:"POST",
+
+            headers:{
+                "Content-Type":"application/json"
+            },
+
+            body:JSON.stringify({
+                rating,
+                comment
+            })
+        }
+    );
+
+    const data = await res.json();
+
+    alert(
+        `Feedback salvat!
+Sentiment score: ${data.sentiment}`
+    );
+}
+
+// ================= RECOMMENDATIONS =================
+
+async function loadRecommendations(){
+
+    const res =
+        await fetch("/api/recommendations");
+
+    const recs =
+        await res.json();
+
+    const container =
+        document.getElementById(
+            "recommendationsContainer"
+        );
+
+    container.innerHTML = "";
+
+    recs.forEach(r => {
+
+        container.innerHTML += `
+
+        <div class="recommendation-box">
+
+            <b>⭐ Recomandare:</b>
+
+            ${r.title}
+
+            (${r.category})
+
+        </div>
+
+        `;
+    });
+}
+
+// ================= RESET =================
+
+function resetFilters(){
+
+    document.getElementById("filterFaculty").value = "";
+
+    document.getElementById("filterDate").value = "";
+
+    document.getElementById("filterCategory").value = "";
+
+    document.getElementById("filterLocation").value = "";
+
+    document.getElementById("filterMode").value = "";
+
+    document.getElementById("filterOrganizer").value = "";
+
+    document.getElementById("filterQR").value = "";
+
+    document.getElementById("filterRegistration").value = "";
+
+    document.getElementById("sortBy").value = "date_asc";
+
+    document.getElementById("logicOperator").value = "AND";
+
+    loadEvents();
+}
+
+// ================= CALENDAR =================
+
+function initCalendar(){
+
+    calendar = new FullCalendar.Calendar(
+
+        document.getElementById("calendar"),
+
+        {
+            initialView:"dayGridMonth",
+            height:"auto"
+        }
+    );
+
+    calendar.render();
+}
+
+function showList(){
+
+    document.getElementById("eventsContainer")
+        .style.display = "block";
+
+    document.getElementById("calendar")
+        .style.display = "none";
+}
+
+function showCalendar(){
+
+    document.getElementById("eventsContainer")
+        .style.display = "none";
+
+    document.getElementById("calendar")
+        .style.display = "block";
+
+    setTimeout(() => {
+
+        calendar.updateSize();
+
+    },100);
+}
+
+// ================= INIT =================
+
+document.addEventListener("DOMContentLoaded", () => {
+
+    initCalendar();
+
+    loadEvents();
+
+    loadRecommendations();
+
+});
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,7 @@
+flask
+flask-mysqldb
+flask-bcrypt
+flask-mail
+google-auth
+google-auth-oauthlib
+google-auth-httplib2

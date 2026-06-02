@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<div class="card-auth">
+    <h2>Login</h2>
+
+    <!-- 🔴 AICI AM ADAUGAT BUTONUL GOOGLE -->
+   <button onclick="window.location.href='/login/google'"
+        class="google-btn">
+    <img src="https://developers.google.com/identity/images/g-logo.png" class="google-icon">
+    Continuă cu Google
+</button>
+
+
+    <div class="text-center mb-3">sau</div>
+    <!-- 🔴 SFÂRȘIT ADAUGARE -->
+
+    <form id="loginForm">
+        <input type="email" id="email" class="form-control mb-2" placeholder="Email" required>
+        <input type="password" id="password" class="form-control mb-2" placeholder="Password" required>
+        <button class="btn btn-primary w-100">Login</button>
+    </form>
+
+    <a href="/register_page">Nu ai cont? Register</a>
+</div>
+
+<script>
+document.getElementById("loginForm").onsubmit = async (e) => {
+    e.preventDefault();
+
+    const res = await fetch("/login", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            email: document.getElementById("email").value,
+            password: document.getElementById("password").value
+        })
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+        window.location.href = "/dashboard";
+    } else {
+        alert(data.error || "Eroare la login!");
+    }
+};
+</script>
+
+</body>
+</html>

@@ -1,0 +1,268 @@
+/* ===================== Login / Register ===================== */
+/* Fundal general */
+body {
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(to right, #cce0ff, #99bbff);
+    margin: 0;
+    padding: 0;
+}
+
+/* Card Login/Register mare */
+.card-auth {
+    background-color: #0d3b66; /* albastru închis */
+    padding: 50px 45px;
+    border-radius: 15px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.3);
+    width: 450px;
+    max-width: 95%;
+    color: #ffffff;
+    margin: 80px auto; /* centrare verticala cu spațiu sus */
+}
+
+/* Titlu */
+.card-auth h2 {
+    text-align: center;
+    margin-bottom: 30px;
+    font-size: 32px;
+    color: #a3cef1;
+}
+
+/* Input-uri */
+.card-auth input {
+    border-radius: 10px;
+    padding: 14px;
+    border: none;
+    font-size: 18px;
+    margin-bottom: 15px;
+}
+
+/* Butoane */
+.card-auth .btn-primary {
+    background-color: #a3cef1;
+    color: #0d3b66;
+    font-weight: bold;
+    width: 100%;
+    margin-top: 15px;
+    padding: 14px;
+    font-size: 18px;
+}
+
+.card-auth .btn-success {
+    background-color: #a3cef1; /* noua culoare */
+    color: #0d3b66;
+    font-weight: bold;
+    width: 100%;
+    margin-top: 15px;
+    padding: 14px;
+    font-size: 18px;
+}
+
+
+/* Link-uri */
+.card-auth a {
+    color: #a3cef1;
+    display: block;
+    text-align: center;
+    margin-top: 25px;
+    text-decoration: none;
+    font-size: 16px;
+}
+
+.card-auth a:hover {
+    text-decoration: underline;
+}
+
+/* ===================== Dashboard ===================== */
+/* Navbar complet fix sus */
+.navbar {
+    position: fixed;
+    top: 10px;
+    right: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 1000;
+}
+
+/* Navbar link-uri */
+.navbar a, .navbar button {
+    text-decoration: none;
+    font-weight: bold;
+    color: #0d3b66;
+    background-color: #a3cef1;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.navbar a:hover, .navbar button:hover {
+    background-color: #0d3b66;
+    color: #a3cef1;
+}
+
+/* Inițiale cont */
+.navbar .initials {
+    background-color: #a3cef1;
+    color: #0d3b66;
+    font-weight: bold;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 16px;
+}
+
+/* Wrapper central pentru carduri */
+.dashboard-wrapper {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding-top: 120px; /* spațiu pentru navbar */
+}
+
+/* Container carduri */
+.dashboard-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+/* Card eveniment */
+.card-event {
+    background-color: #a3cef1;
+    color: #0d3b66;
+    width: 300px;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card-event:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 25px rgba(0,0,0,0.25);
+}
+
+.card-event h5 {
+    font-size: 18px;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.card-event p {
+    font-size: 14px;
+    margin-bottom: 15px;
+}
+
+.card-event .btn-details {
+    background-color: #0d3b66;
+    color: #a3cef1;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 12px;
+    cursor: pointer;
+}
+
+.card-event .btn-details:hover {
+    background-color: #0b3250;
+}
+
+.google-btn {
+    width: 100%;
+    background-color: #DB4437; /* Roșu Google */
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 5px;
+    font-size: 16px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.google-btn:hover {
+    background-color: #C33D31; /* Roșu mai închis la hover */
+}
+
+.google-icon {
+    width: 20px;
+    height: 20px;
+    background-color: white;
+    border-radius: 50%;
+    padding: 2px;
+}
+/* ===================== Efecte atractive pentru butoane ===================== */
+
+/* Efect general pentru toate butoanele */
+button,
+.google-btn,
+.card-auth .btn-primary,
+.card-auth .btn-success,
+.card-event .btn-details {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Hover – mărire + shadow */
+button:hover,
+.google-btn:hover,
+.card-auth .btn-primary:hover,
+.card-auth .btn-success:hover,
+.card-event .btn-details:hover {
+    transform: scale(1.06);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.25);
+}
+
+/* Click – apăsare */
+button:active,
+.google-btn:active,
+.card-auth .btn-primary:active,
+.card-auth .btn-success:active,
+.card-event .btn-details:active {
+    transform: scale(0.92);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+/* Efect bounce subtil după hover */
+button:hover,
+.google-btn:hover,
+.card-auth .btn-primary:hover,
+.card-auth .btn-success:hover {
+    animation: bounce 0.25s ease-out;
+}
+
+@keyframes bounce {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.08); }
+    60%  { transform: scale(1.03); }
+    100% { transform: scale(1.06); }
+}
+
+
+
+
+
+.faculty-item {
+    background: #e8f1fa;
+    padding: 10px;
+    border-radius: 8px;
+    border-left: 4px solid #0d3b66;
+    font-weight: 500;
+    transition: 0.2s;
+}
+
+.faculty-item:hover {
+    background: #d0e4f7;
+    cursor: pointer;
+}
