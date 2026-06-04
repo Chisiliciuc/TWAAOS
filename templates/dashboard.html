@@ -148,6 +148,14 @@
             box-shadow:0 4px 20px rgba(0,0,0,0.05);
         }
 
+        #recommendationsContainer {
+    display: none; /* Îl ascundem implicit */
+    background: white;
+    padding: 25px;
+    border-radius: 20px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+}
+
         textarea{
             resize:none;
         }
@@ -791,37 +799,32 @@ Sentiment score: ${data.sentiment}`
 }
 
 // ================= RECOMMENDATIONS =================
+async function loadRecommendations() {
+    // 1. Ascundem tot restul
+    document.getElementById("eventsContainer").style.display = "none";
+    document.querySelector(".filter-box").style.display = "none";
+    document.getElementById("calendar").style.display = "none";
 
-async function loadRecommendations(){
+    // 2. Arătăm containerul de recomandări
+    const container = document.getElementById("recommendationsContainer");
+    container.style.display = "block";
+    container.innerHTML = "<h3>Se încarcă recomandările...</h3>";
 
-    const res =
-        await fetch("/api/recommendations");
+    // 3. Luăm datele de la server
+    const res = await fetch("/api/recommendations");
+    const recs = await res.json();
 
-    const recs =
-        await res.json();
-
-    const container =
-        document.getElementById(
-            "recommendationsContainer"
-        );
-
-    container.innerHTML = "";
+    container.innerHTML = "<h3>⭐ Recomandări pentru tine</h3><hr>";
+    if(recs.length === 0) {
+        container.innerHTML += "<p>Nu avem recomandări momentan.</p>";
+    }
 
     recs.forEach(r => {
-
         container.innerHTML += `
-
         <div class="recommendation-box">
-
-            <b>⭐ Recomandare:</b>
-
-            ${r.title}
-
-            (${r.category})
-
-        </div>
-
-        `;
+            <b>${r.title}</b><br>
+            <small>Categorie: ${r.category}</small>
+        </div>`;
     });
 }
 
@@ -868,41 +871,24 @@ function initCalendar(){
 
     calendar.render();
 }
-
-function showList(){
-
-    document.getElementById("eventsContainer")
-        .style.display = "block";
-
-    document.getElementById("calendar")
-        .style.display = "none";
+function showList() {
+    document.getElementById("eventsContainer").style.display = "block";
+    document.querySelector(".filter-box").style.display = "block"; // Arătăm filtrele
+    document.getElementById("calendar").style.display = "none";
+    document.getElementById("recommendationsContainer").style.display = "none";
+}function showCalendar() {
+    document.getElementById("eventsContainer").style.display = "none";
+    document.querySelector(".filter-box").style.display = "none"; // Ascundem filtrele
+    document.getElementById("calendar").style.display = "block";
+    document.getElementById("recommendationsContainer").style.display = "none";
+    setTimeout(() => { calendar.updateSize(); }, 100);
 }
-
-function showCalendar(){
-
-    document.getElementById("eventsContainer")
-        .style.display = "none";
-
-    document.getElementById("calendar")
-        .style.display = "block";
-
-    setTimeout(() => {
-
-        calendar.updateSize();
-
-    },100);
-}
-
 // ================= INIT =================
 
 document.addEventListener("DOMContentLoaded", () => {
-
     initCalendar();
-
-    loadEvents();
-
-    loadRecommendations();
-
+    loadEvents(); // Încarcă doar lista de evenimente
+    // loadRecommendations(); <-- ȘTERGE SAU COMENTEAZĂ ACEASTĂ LINIE
 });
 
 </script>

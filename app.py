@@ -2,7 +2,7 @@
 # app.py
 # ===========================
 
-from flask import Flask, request, jsonify, render_template, redirect, url_for, session, Response
+from flask import Flask, request, jsonify, render_template, redirect, url_for, session, Response, send_from_directory
 from flask_mysqldb import MySQL
 from flask_bcrypt import Bcrypt
 from flask_mail import Mail, Message
@@ -24,7 +24,19 @@ from datetime import datetime, timedelta
 
 import config
 
+
 app = Flask(__name__)
+
+
+import os
+from werkzeug.utils import secure_filename
+
+UPLOAD_FOLDER = "uploads"
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+
+@app.route('/uploads/<path:filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
 # ================= CONFIG =================
 
@@ -93,6 +105,13 @@ def get_role(email):
         return "admin"
 
     return None
+
+# ================= ORGANIZER PROTECTION =================
+def require_organizer():
+    if "user" not in session:
+        return False
+
+    return session.get("role") in ["profesor", "admin"]
 
 # ================= AUTH =================
 
@@ -268,24 +287,44 @@ def callback_google():
     return redirect("/dashboard")
 
 # ================= DASHBOARD =================
+# ================= DASHBOARD =================
 
-@app.route('/dashboard')
+@app.route("/dashboard")
 def dashboard():
-
     if "user" not in session:
         return redirect("/")
 
+    role = session["role"]
+    return redirect(f"/dashboard/{role}")
+
+
+@app.route("/dashboard/profesor")
+def dashboard_profesor():
+    if "user" not in session:
+        return redirect("/")
+
+    # Extragem inițialele (ex: doru.profesor@usm.ro -> DP)
     email = session["user"]
+    parts = email.split('@')[0].split('.')
+    initials = "".join([p[0].upper() for p in parts if p])
 
-    initials = "".join([
-        p[0].upper()
-        for p in email.split("@")[0].split(".")
-    ][:2])
+    return render_template("organizer_dashboard.html", initials=initials)
 
-    return render_template(
-        "dashboard.html",
-        initials=initials
-    )
+
+@app.route("/dashboard/student")
+def dashboard_student():
+    if "user" not in session:
+        return redirect("/")
+
+    # Extragem inițialele (ex: ion.popescu@student.usv.ro -> IP)
+    email = session["user"]
+    parts = email.split('@')[0].split('.')
+    initials = "".join([p[0].upper() for p in parts if p])
+
+    # Trimitem variabila 'initials' către dashboard.html
+    return render_template("dashboard.html", initials=initials)
+
+
 
 # ================= EVENTS API =================
 
@@ -403,12 +442,8 @@ def get_events():
             "title": r[1],
             "description": r[2],
 
-            "start_datetime":
-                r[3].strftime("%Y-%m-%d %H:%M"),
-
-            "end_datetime":
-                r[4].strftime("%Y-%m-%d %H:%M")
-                if r[4] else None,
+            "start_datetime": r[3].strftime("%Y-%m-%d %H:%M") if r[3] else "",
+            "end_datetime": r[4].strftime("%Y-%m-%d %H:%M") if r[4] else "",
 
             "location": r[5],
             "faculty": r[6],
@@ -748,6 +783,347 @@ scheduler.add_job(
 )
 
 scheduler.start()
+
+
+
+
+
+
+#================PRODESOR==============
+
+@app.route("/api/organizer/events", methods=["POST"])
+def create_event():
+    if not require_organizer():
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.json
+    cur = mysql.connection.cursor()
+
+    cur.execute("""
+        INSERT INTO events(
+            title, description, start_datetime, end_datetime,
+            location, category, mode, organizer,
+            registration_link, has_qr,
+            max_participants, registration_deadline,
+            max_file_count, max_file_size_mb
+        )
+        VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+    """, (
+        data["title"],
+        data["description"],
+        data["start_datetime"],
+        data["end_datetime"],
+        data["location"],
+        data["category"],
+        data["mode"],
+        session["user"],
+        data.get("registration_link"),
+        int(data.get("has_qr", 0)),
+        data.get("max_participants"),
+        data.get("registration_deadline"),
+        data.get("max_file_count"),
+        data.get("max_file_size_mb")
+    ))
+
+    mysql.connection.commit()
+    cur.close()
+
+    return jsonify({"message": "Eveniment creat"})
+
+@app.route("/api/organizer/events/<int:id>", methods=["PUT"])
+def update_event(id):
+    if not require_organizer(): return jsonify({"error":"Unauthorized"}),401
+    data = request.json
+    cur = mysql.connection.cursor()
+    cur.execute("""
+        UPDATE events
+        SET title=%s, description=%s, start_datetime=%s, end_datetime=%s,
+            location=%s, category=%s, mode=%s, max_participants=%s,
+            registration_deadline=%s, faculty=%s, max_file_count=%s, 
+            max_file_size_mb=%s, registration_link=%s
+        WHERE id=%s AND organizer=%s
+    """, (
+        data.get("title"), data.get("description"), data.get("start_datetime"),
+        data.get("end_datetime"), data.get("location"), data.get("category"),
+        data.get("mode"), data.get("max_participants"), data.get("registration_deadline"),
+        data.get("faculty"), data.get("max_file_count"), data.get("max_file_size_mb"),
+        data.get("registration_link"), id, session["user"]
+    ))
+    mysql.connection.commit()
+    cur.close()
+    return jsonify({"message":"OK"})
+
+
+@app.route("/api/organizer/events/<int:id>", methods=["DELETE"])
+def delete_event(id):
+
+    if not require_organizer():
+        return jsonify({"error": "Unauthorized"}), 401
+
+    cur = mysql.connection.cursor()
+
+    cur.execute("""
+        DELETE FROM events
+        WHERE id=%s AND organizer=%s
+    """, (id, session["user"]))
+
+    mysql.connection.commit()
+    cur.close()
+
+    return jsonify({"message": "Șters"})
+
+
+
+@app.route("/api/organizer/events")
+def my_events():
+
+    if not require_organizer():
+        return jsonify({"error": "Unauthorized"}), 401
+
+    cur = mysql.connection.cursor()
+
+    cur.execute("""
+        SELECT id,title,description,start_datetime,end_datetime,
+               location,category,mode,max_participants
+        FROM events
+        WHERE organizer=%s
+        ORDER BY start_datetime DESC
+    """, (session["user"],))
+
+    rows = cur.fetchall()
+    cur.close()
+
+    return jsonify([
+        {
+            "id": r[0],
+            "title": r[1],
+            "description": r[2],
+            "start_datetime": str(r[3]),
+            "end_datetime": str(r[4]),
+            "location": r[5],
+            "category": r[6],
+            "mode": r[7],
+            "capacity": r[8]
+        }
+        for r in rows
+    ])
+
+
+@app.route("/api/organizer/events/<int:id>")
+def get_event(id):
+    cur = mysql.connection.cursor()
+    # Adăugăm facultate, max_file_count și max_file_size_mb în SELECT
+    cur.execute("""
+        SELECT id, title, description, start_datetime, end_datetime,
+               location, category, mode, max_participants, registration_deadline,
+               faculty, max_file_count, max_file_size_mb, registration_link
+        FROM events
+        WHERE id=%s AND organizer=%s
+    """, (id, session["user"]))
+    r = cur.fetchone()
+    cur.close()
+
+    return jsonify({
+        "id": r[0], "title": r[1], "description": r[2],
+        "start_datetime": str(r[3]), "end_datetime": str(r[4]),
+        "location": r[5], "category": r[6], "mode": r[7],
+        "capacity": r[8], "registration_deadline": str(r[9]),
+        "faculty": r[10], "max_file_count": r[11], "max_file_size_mb": r[12],
+        "registration_link": r[13]
+    })
+
+
+@app.route("/api/organizer/events/<int:id>/participants")
+def participants(id):
+
+    if not require_organizer():
+        return jsonify({"error":"Unauthorized"}),401
+
+    cur=mysql.connection.cursor()
+
+    cur.execute("""
+        SELECT user_email, checked_in
+        FROM registrations
+        WHERE event_id=%s
+    """,(id,))
+
+    rows=cur.fetchall()
+    cur.close()
+
+    return jsonify([
+        {
+            "email":r[0],
+            "status":"checked-in" if r[1] else "registered"
+        }
+        for r in rows
+    ])
+
+
+@app.route("/api/organizer/events/<int:id>/checkin",methods=["POST"])
+def checkin(id):
+
+    data=request.json
+
+    cur=mysql.connection.cursor()
+
+    cur.execute("""
+        UPDATE registrations
+        SET checked_in=1
+        WHERE event_id=%s
+        AND user_email=%s
+    """,(id,data["email"]))
+
+    mysql.connection.commit()
+    cur.close()
+
+    return jsonify({"message":"Checkin OK"})
+
+
+@app.route("/api/organizer/events/<int:id>/export")
+def export(id):
+
+    cur = mysql.connection.cursor()
+
+    cur.execute("""
+        SELECT user_email FROM registrations
+        WHERE event_id=%s
+    """, (id,))
+
+    rows = cur.fetchall()
+    cur.close()
+
+    csv = "email\n" + "\n".join([r[0] for r in rows])
+
+    return Response(csv, mimetype="text/csv")
+
+
+@app.route("/api/organizer/events/<int:id>/upload", methods=["POST"])
+def upload(id):
+
+    files = request.files.getlist("files")
+
+    folder = f"static/uploads/{id}"
+    os.makedirs(folder, exist_ok=True)
+
+    for f in files:
+        f.save(os.path.join(folder, f.filename))
+
+    return jsonify({"message": "upload ok"})
+
+@app.route("/api/organizer/events/<int:id>/materials")
+def materials(id):
+
+    folder = f"static/uploads/{id}"
+
+    if not os.path.exists(folder):
+        return jsonify([])
+
+    return jsonify([
+        {"name": f, "url": f"/static/uploads/{id}/{f}"}
+        for f in os.listdir(folder)
+    ])
+
+@app.route("/api/organizer/events/<int:id>/stats")
+def stats(id):
+
+    cur = mysql.connection.cursor()
+
+    cur.execute("SELECT COUNT(*) FROM registrations WHERE event_id=%s", (id,))
+    participants = cur.fetchone()[0]
+
+    cur.execute("SELECT AVG(sentiment) FROM feedback WHERE event_id=%s", (id,))
+    avg = cur.fetchone()[0] or 0
+
+    cur.close()
+
+    return jsonify({
+        "participants": participants,
+        "avg_rating": round(avg, 2)
+    })
+
+
+@app.route("/api/organizer/events/<int:id>/sponsors", methods=["POST"])
+def add_sponsor(id):
+    if not require_organizer():
+        return jsonify({"error": "Unauthorized"}), 401
+
+    name = request.form.get("name")
+    logo = request.files.get("logo")
+
+    if not name or not logo:
+        return jsonify({"error": "Date incomplete"}), 400
+
+    # 1. Salvare fizică a fișierului
+    folder = f"static/sponsors/{id}"
+    os.makedirs(folder, exist_ok=True)
+    file_path = os.path.join(folder, logo.filename)
+    logo.save(file_path)
+
+    # 2. Salvare în baza de date în tabelul creat de tine
+    # Salvăm calea relativă pentru a fi ușor de afișat în HTML (src)
+    db_logo_path = f"/static/sponsors/{id}/{logo.filename}"
+
+    cur = mysql.connection.cursor()
+    cur.execute("""
+        INSERT INTO event_sponsors (event_id, name, logo) 
+        VALUES (%s, %s, %s)
+    """, (id, name, db_logo_path))
+
+    mysql.connection.commit()
+    cur.close()
+
+    return jsonify({"message": "Sponsor adăugat"})
+
+
+
+@app.route("/api/organizer/events/<int:id>/sponsors", methods=["GET"])
+def get_sponsors(id):
+    cur = mysql.connection.cursor()
+    # Citim direct din tabelul event_sponsors
+    cur.execute("SELECT name, logo FROM event_sponsors WHERE event_id=%s", (id,))
+    rows = cur.fetchall()
+    cur.close()
+
+    return jsonify([
+        {
+            "name": r[0],
+            "url": r[1]
+        } for r in rows
+    ])
+
+
+
+import qrcode
+
+def generate_qr(email, event_id):
+
+    qr = qrcode.make(f"{email}-{event_id}")
+
+    path = f"static/qrcodes/{event_id}_{email}.png"
+    os.makedirs("static/qrcodes", exist_ok=True)
+
+    qr.save(path)
+
+    return path
+
+
+@app.route("/api/organizer/events/<int:id>/materials/<string:filename>", methods=["DELETE"])
+def delete_material(id, filename):
+    if not require_organizer():
+        return jsonify({"error": "Unauthorized"}), 401
+
+    # Construim calea către fișier
+    file_path = os.path.join(f"static/uploads/{id}", filename)
+
+    try:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            return jsonify({"message": "Fișier șters cu succes"})
+        else:
+            return jsonify({"error": "Fișierul nu a fost găsit"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 # ================= LOGOUT =================
 
